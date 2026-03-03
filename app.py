@@ -268,9 +268,13 @@ if uploaded_file is not None:
                             'quiet': ''
                         }
                         
-                        # Specify path to wkhtmltopdf
-                        path_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
-                        config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+                        # Specify path to wkhtmltopdf dynamically based on OS
+                        if platform.system() == "Windows":
+                            path_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
+                            config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+                        else:
+                            # Streamlit Cloud (Linux) should have it installed in the system PATH if included in packages.txt
+                            config = pdfkit.configuration()
                         
                         # Use temp files for pdfkit and pdf merging
                         temp_dir = tempfile.gettempdir()
