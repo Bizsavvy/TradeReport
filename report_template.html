@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Trading Performance Report</title>
+    {% if embedded_css %}
+    <style>
+        {
+                {
+                embedded_css
+            }
+        }
+    </style>
+    {% else %}
+    <link rel="stylesheet" href="report_style.css">
+    {% endif %}
+</head>
+
+<body>
+
+    <h1>Trading Performance Report</h1>
+
+    <p style="color: #A0AEC0;">
+        <strong>Account Analysis:</strong> {{ start_date }} &ndash; {{ end_date }}
+    </p>
+
+    <p>
+        This account has demonstrated exceptional high-growth performance over the analyzed period, achieving a
+        <strong>+{{ roi }}% Return on Investment (ROI)</strong> while maintaining a controlled risk profile. The
+        strategy exhibits a high win rate ({{ win_rate }}%) combined with a strong Profit Factor ({{ profit_factor }}),
+        indicating a highly efficient and profitable trading system.
+    </p>
+
+    <h2>1. Key Performance Indicators (KPIs)</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th>Value</th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Net Profit</strong></td>
+                <td>{{ net_profit }}</td>
+                <td><span class="meaning-text">Total profit secured after all fees/losses.</span></td>
+            </tr>
+            <tr>
+                <td><strong>Total ROI</strong></td>
+                <td>+{{ roi }}%</td>
+                <td><span class="meaning-text">Return on the initial deposit of {{ initial_deposit }}.</span></td>
+            </tr>
+            <tr>
+                <td><strong>Profit Factor</strong></td>
+                <td>{{ profit_factor }}</td>
+                <td><span class="meaning-text">For every $1 lost, the account made ${{ profit_factor }}.</span></td>
+            </tr>
+            <tr>
+                <td><strong>Win Rate</strong></td>
+                <td>{{ win_rate }}%</td>
+                <td><span class="meaning-text">Won {{ winning_trades_count }} out of {{ total_trades }} trades
+                        taken.</span></td>
+            </tr>
+            <tr>
+                <td><strong>Total Trades</strong></td>
+                <td>{{ total_trades }}</td>
+                <td><span class="meaning-text">Total executions during the period.</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>2. Risk &amp; Stability Analysis</h2>
+    <ul class="bullet-list">
+        <li><strong>Max Drawdown:</strong> {{ max_drawdown_percent }}% ({{ max_drawdown_usd }})</li>
+        <li><em>Analysis:</em> The drawdown is moderate relative to the aggressive growth. The account recovered from
+            its deepest dip quickly, validating the strategy's resilience.</li>
+        <br>
+        <li><strong>Average Trade Outcome:</strong></li>
+        <li><strong>Avg. Win:</strong> <span class="profit">+{{ avg_win }}</span></li>
+        <li><strong>Avg. Loss:</strong> <span class="loss">-{{ avg_loss_abs }}</span></li>
+        <li><em>Analysis:</em> The strategy relies on a high win rate ({{ win_rate }}%) rather than a high
+            Risk-to-Reward ratio. The average win and loss are nearly 1:1, meaning the high accuracy is the primary
+            driver of profit.</li>
+    </ul>
+
+    <h2>3. Detailed Financial Breakdown</h2>
+    <ul class="bullet-list">
+        <li><strong>Gross Profit:</strong> {{ gross_profit }} <span class="meaning-text">(Total money gained from
+                winning trades)</span></li>
+        <li><strong>Gross Loss:</strong> -{{ gross_loss_abs }} <span class="meaning-text">(Total money lost from losing
+                trades)</span></li>
+        <li><strong>Net Result:</strong> {{ net_profit }} <span class="meaning-text">(Gross Profit minus Gross Loss
+                &amp; Fees)</span></li>
+        <br>
+        <li><strong>Initial Deposit:</strong> ~{{ initial_deposit }}</li>
+        <li><strong>Net Deposits/Withdrawals:</strong> {{ net_deposits_withdrawals }}</li>
+        <li><strong>Current Balance:</strong> ~{{ current_balance }}</li>
+    </ul>
+
+    <h2>Conclusion</h2>
+    <p>
+        {{ conclusion_text }}
+    </p>
+
+    <div class="footer">
+        Generated automatically via Trading Performance Report Generator.
+    </div>
+
+</body>
+
+</html>

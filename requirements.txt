@@ -1,0 +1,7 @@
+streamlit
+pandas
+beautifulsoup4
+Jinja2
+pdfkit
+pypdf
+lxml
