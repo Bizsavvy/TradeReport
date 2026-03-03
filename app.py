@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 import jinja2
 import pdfkit
 from pypdf import PdfWriter
+from google import genai
 
 @st.cache_resource
 def setup_linux_wkhtmltopdf():
@@ -54,6 +55,9 @@ st.title("Trading Performance Report Generator")
 st.markdown("Upload your MT4/MT5 Trading Statement (.html format) to generate a detailed performance report.")
 
 user_starting_balance = st.number_input("Enter Starting Capital ($)", min_value=1.0, value=1000.0, step=100.0, help="If your HTML statement does not start at $0, enter the account's starting balance here to accurately calculate ROI and Drawdowns.")
+
+st.sidebar.header("AI Configuration (Optional)")
+google_api_key = st.sidebar.text_input("Google Gemini API Key", type="password", help="Enter your Gemini API key to auto-generate a custom analytical conclusion for the report. If left blank, a standard conclusion will be used.")
 
 uploaded_file = st.file_uploader("Upload HTML Statement", type=["html", "htm"])
 
@@ -242,10 +246,43 @@ if uploaded_file is not None:
                 st.subheader("Conclusion")
                 growth_balance = initial_deposit + net_profit
                 
-                if net_profit > 0:
-                    conclusion_text = f"This statement reflects a highly profitable, active trading strategy. The system has successfully compounded the account from ~${initial_deposit:,.0f} to over ${growth_balance:,.0f} in the analyzed period. The metrics suggest a disciplined approach that capitalizes frequently on market movements (high win rate) while keeping losses within a recoverable range (stable drawdown)."
-                else:
-                    conclusion_text = f"This statement reflects a challenging trading period, with the account moving from ~${initial_deposit:,.0f} to ~${growth_balance:,.0f}. The strategy metrics suggest room for improvement in risk management or trade execution."
+                conclusion_text = ""
+                # Try to use Gemini AI if API key is provided
+                if google_api_key:
+                    with st.spinner("Generating AI analysis with Gemini..."):
+                        try:
+                            client = genai.Client(api_key=google_api_key)
+                            prompt = f"""
+                            You are a professional financial analyst reviewing a trading performance statement.
+                            Write a highly professional, concise, one-paragraph conclusion (no bullet points, no headers) 
+                            evaluating this trading strategy based on the following metrics:
+                            
+                            - Initial Deposit: ${initial_deposit:,.2f}
+                            - Net Profit: ${net_profit:,.2f}
+                            - Current Balance: ${growth_balance:,.2f}
+                            - ROI: {roi:.1f}%
+                            - Win Rate: {win_rate:.1f}%
+                            - Max Drawdown: {max_drawdown_percent:.2f}% (${max_drawdown_usd:,.2f})
+                            - Profit Factor: {profit_factor:.2f}
+                            - Total Executions: {total_trades}
+                            
+                            Your tone should be objective and analytical, fit for an institutional or professional client.
+                            """
+                            response = client.models.generate_content(
+                                model='gemini-2.5-flash',
+                                contents=prompt,
+                            )
+                            if response and response.text:
+                                conclusion_text = response.text.strip()
+                        except Exception as e:
+                            st.error(f"Failed to generate AI conclusion: {e}")
+                            
+                # Fallback to hardcoded text
+                if not conclusion_text:
+                    if net_profit > 0:
+                        conclusion_text = f"This statement reflects a highly profitable, active trading strategy. The system has successfully compounded the account from ~${initial_deposit:,.0f} to over ${growth_balance:,.0f} in the analyzed period. The metrics suggest a disciplined approach that capitalizes frequently on market movements (high win rate) while keeping losses within a recoverable range (stable drawdown)."
+                    else:
+                        conclusion_text = f"This statement reflects a challenging trading period, with the account moving from ~${initial_deposit:,.0f} to ~${growth_balance:,.0f}. The strategy metrics suggest room for improvement in risk management or trade execution."
                 
                 st.write(conclusion_text)
                 
