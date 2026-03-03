@@ -1,11 +1,52 @@
+import os
+import tempfile
+import sys
+import platform
+import subprocess
+import tarfile
+import urllib.request
+import stat
 import streamlit as st
 import pandas as pd
 from bs4 import BeautifulSoup
 import jinja2
 import pdfkit
 from pypdf import PdfWriter
-import tempfile
-import os
+
+@st.cache_resource
+def setup_linux_wkhtmltopdf():
+    wk_path = "/tmp/wk_bin/wkhtmltox/bin/wkhtmltopdf"
+    if not os.path.exists(wk_path):
+        os.makedirs("/tmp/wk_bin", exist_ok=True)
+        tar_path = "/tmp/wkhtmltox.tar.xz"
+        url = "https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz"
+        
+        try:
+            urllib.request.urlretrieve(url, tar_path)
+            with tarfile.open(tar_path, "r:xz") as tar:
+                def is_within_directory(directory, target):
+                    abs_directory = os.path.abspath(directory)
+                    abs_target = os.path.abspath(target)
+                    prefix = os.path.commonprefix([abs_directory, abs_target])
+                    return prefix == abs_directory
+
+                def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+                    for member in tar.getmembers():
+                        member_path = os.path.join(path, member.name)
+                        if not is_within_directory(path, member_path):
+                            raise Exception("Attempted Path Traversal in Tar File")
+                    tar.extractall(path, members, numeric_owner=numeric_owner)
+
+                safe_extract(tar, "/tmp/wk_bin")
+            
+            # Make sure it's executable
+            st_bin = os.stat(wk_path)
+            os.chmod(wk_path, st_bin.st_mode | stat.S_IEXEC)
+        except Exception as e:
+            st.error(f"Failed to download or extract wkhtmltopdf: {e}")
+            return None
+            
+    return wk_path
 
 st.set_page_config(page_title="Trading Performance Report Generator", layout="wide")
 
@@ -273,8 +314,12 @@ if uploaded_file is not None:
                             path_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
                             config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
                         else:
-                            # Streamlit Cloud (Linux) should have it installed in the system PATH if included in packages.txt
-                            config = pdfkit.configuration()
+                            # Streamlit Cloud (Linux) dynamically download binary
+                            linux_bin_path = setup_linux_wkhtmltopdf()
+                            if linux_bin_path and os.path.exists(linux_bin_path):
+                                config = pdfkit.configuration(wkhtmltopdf=linux_bin_path)
+                            else:
+                                config = pdfkit.configuration()
                         
                         # Use temp files for pdfkit and pdf merging
                         temp_dir = tempfile.gettempdir()
