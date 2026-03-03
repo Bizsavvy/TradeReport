@@ -1,7 +1,7 @@
 streamlit
 pandas
 beautifulsoup4
-Jinja2
+jinja2
 pdfkit
 pypdf
 lxml
