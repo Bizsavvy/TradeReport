@@ -56,9 +56,6 @@ st.markdown("Upload your MT4/MT5 Trading Statement (.html format) to generate a 
 
 user_starting_balance = st.number_input("Enter Starting Capital ($)", min_value=1.0, value=1000.0, step=100.0, help="If your HTML statement does not start at $0, enter the account's starting balance here to accurately calculate ROI and Drawdowns.")
 
-st.sidebar.header("AI Configuration (Optional)")
-google_api_key = st.sidebar.text_input("Google Gemini API Key", type="password", help="Enter your Gemini API key to auto-generate a custom analytical conclusion for the report. If left blank, a standard conclusion will be used.")
-
 uploaded_file = st.file_uploader("Upload HTML Statement", type=["html", "htm"])
 
 if uploaded_file is not None:
@@ -247,6 +244,15 @@ if uploaded_file is not None:
                 growth_balance = initial_deposit + net_profit
                 
                 conclusion_text = ""
+                
+                # Try to fetch API key from streamlit secrets
+                google_api_key = None
+                try:
+                    if "GEMINI_API_KEY" in st.secrets:
+                        google_api_key = st.secrets["GEMINI_API_KEY"]
+                except Exception:
+                    pass
+                
                 # Try to use Gemini AI if API key is provided
                 if google_api_key:
                     with st.spinner("Generating AI analysis with Gemini..."):
