@@ -14,6 +14,59 @@ import pdfkit
 from pypdf import PdfWriter
 from google import genai
 import markdown
+import sqlite3
+from datetime import datetime
+
+# --- Rate Limiting Setup ---
+DB_FILE = "rate_limits.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS usage 
+                 (ip_address TEXT, date TEXT, count INTEGER, PRIMARY KEY(ip_address, date))''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def get_client_ip():
+    """Extracts the client IP from Streamlit headers or connections."""
+    try:
+        # Standard way for Streamlit Cloud / Proxies
+        if 'X-Forwarded-For' in st.context.headers:
+            ip = st.context.headers['X-Forwarded-For'].split(',')[0].strip()
+            if ip:
+                return ip
+    except Exception:
+        pass
+    
+    # Fallback for localhost or direct connections
+    return "127.0.0.1"
+
+def check_and_increment_rate_limit(ip_address, limit=3):
+    today = datetime.now().strftime('%Y-%m-%d')
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    
+    c.execute("SELECT count FROM usage WHERE ip_address=? AND date=?", (ip_address, today))
+    result = c.fetchone()
+    
+    if result:
+        current_count = result[0]
+        if current_count >= limit:
+            conn.close()
+            return False # Limit reached
+        
+        c.execute("UPDATE usage SET count = count + 1 WHERE ip_address=? AND date=?", (ip_address, today))
+    else:
+        c.execute("INSERT INTO usage (ip_address, date, count) VALUES (?, ?, 1)", (ip_address, today))
+        
+    conn.commit()
+    conn.close()
+    return True # Allowed
+
+# ----------------------------
 
 @st.cache_resource
 def setup_linux_wkhtmltopdf():
@@ -250,7 +303,15 @@ This statement reflects a highly profitable, active trading strategy. The system
                 # Retrieve API key securely from Streamlit secrets
                 google_api_key = st.secrets.get("GEMINI_API_KEY", "")
                 
-                # Try to use Gemini AI if API key is provided
+                # Check rate limit before hitting AI
+                client_ip = get_client_ip()
+                can_generate = check_and_increment_rate_limit(client_ip, limit=3)
+                
+                if not can_generate:
+                    st.error("⚠️ Daily Limit Reached: You have generated 3 AI reports today. Please try again tomorrow. Falling back to base metrics view.")
+                    google_api_key = None # Override to skip AI logic and use base markdown
+                
+                # Try to use Gemini AI if API key is provided and rate limit allows
                 if google_api_key:
                     with st.spinner("Generating AI Full Report with Gemini..."):
                         try:
