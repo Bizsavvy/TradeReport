@@ -191,6 +191,10 @@ if uploaded_file is not None:
                 roi_text = f"+{roi:.1f}%" if roi > 0 else f"{roi:.1f}%"
                 pf_display = f"{profit_factor:.2f}" if profit_factor != float('inf') else 'N/A'
                 
+                # Calculate Risk to Reward Ratio
+                rr_ratio = (avg_win / abs(avg_loss)) if avg_loss != 0 else float('inf')
+                rr_display = f"1:{rr_ratio:.2f}" if rr_ratio != float('inf') else "N/A"
+                
                 # Format Net Deposits correctly (e.g. -$2,600 instead of $-2,600)
                 if net_deposits_withdrawals > 0:
                     net_dep_str = f"+${net_deposits_withdrawals:,.2f}"
@@ -215,6 +219,7 @@ This account has demonstrated exceptional high-growth performance over the analy
 | **Profit Factor** | {pf_display} | For every $1 lost, the account made ${profit_factor:.2f}. |
 | **Win Rate** | {win_rate:.1f}% | Won {int(len(winning_trades))} out of {total_trades} trades taken. |
 | **Total Trades** | {total_trades} | Total executions during the period. |
+| **Avg. Risk:Reward**| {rr_display} | The average dollar made per dollar risked on a per-trade basis. |
 
 ## 2. Risk & Stability Analysis
 
@@ -224,7 +229,7 @@ This account has demonstrated exceptional high-growth performance over the analy
 - **Average Trade Outcome:**
   - **Avg. Win:** +${avg_win:,.2f}
   - **Avg. Loss:** -${abs(avg_loss):,.2f}
-- *Analysis:* The strategy relies on a high win rate ({win_rate:.0f}%) rather than a high Risk-to-Reward ratio. The average win and loss are nearly 1:1, meaning the high accuracy is the primary driver of profit.
+- *Analysis:* With an average Risk-to-Reward ratio of {rr_display} and a win rate of ({win_rate:.0f}%), the strategy's profitability relies significantly on maintaining high accuracy.
 
 ## 3. Detailed Financial Breakdown
 
@@ -260,6 +265,7 @@ This statement reflects a highly profitable, active trading strategy. The system
                             2. You MUST keep the exact same section headers (1. Key Performance Indicators (KPIs), 2. Risk & Stability Analysis, 3. Detailed Financial Breakdown, Conclusion).
                             3. You MUST keep the KPI table and the Financial Breakdown exactly as they are. Do not change the numbers or formatting of the bullets/tables.
                             4. Do not wrap the response in ```markdown tags. Just output the raw markdown text.
+                            5. NEVER USE MathJax or LaTeX formatting for currency. E.g., DO NOT output `$500$`. You must output it as plain text `$$500`. Gemini interprets single dollar signs as math brackets: do not do this. Use standard dollar signs normally without triggering math context, or escape them if necessary, but keep it plain text.
                             
                             Here is the base report data to use:
                             
