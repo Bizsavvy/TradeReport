@@ -13,6 +13,7 @@ import jinja2
 import pdfkit
 from pypdf import PdfWriter
 from google import genai
+import markdown
 
 @st.cache_resource
 def setup_linux_wkhtmltopdf():
@@ -187,41 +188,8 @@ if uploaded_file is not None:
                 # Dynamic ROI
                 roi = ((net_profit) / initial_deposit * 100) if initial_deposit > 0 else 0
                 
-                st.header("Trading Performance Report")
-                st.write(f"**Account Analysis:** {start_date} – {end_date}")
-                if roi > 0:
-                    pf_display = f"{profit_factor:.2f}" if profit_factor != float('inf') else 'N/A'
-                    st.markdown(f"This account has demonstrated exceptional high-growth performance over the analyzed period, achieving a **+{roi:.1f}% Return on Investment (ROI)** while maintaining a controlled risk profile. The strategy exhibits a high win rate ({win_rate:.1f}%) combined with a strong Profit Factor ({pf_display}), indicating a highly efficient and profitable trading system.")
-                else:
-                    pf_display = f"{profit_factor:.2f}" if profit_factor != float('inf') else 'N/A'
-                    st.markdown(f"This account has shown a **{roi:.1f}% Return on Investment (ROI)** over the analyzed period. The strategy exhibits a win rate of ({win_rate:.1f}%) and a Profit Factor of ({pf_display}).")
-                
-                st.subheader("1. Key Performance Indicators (KPIs)")
-                kpi_data = {
-                    "Metric": ["Net Profit", "Total ROI", "Profit Factor", "Win Rate", "Total Trades"],
-                    "Value": [f"${net_profit:,.2f}", f"+{roi:.1f}%", f"{profit_factor:.2f}" if profit_factor != float('inf') else "N/A", f"{win_rate:.1f}%", str(total_trades)],
-                    "Meaning": [
-                        "Total profit secured after all fees/losses.",
-                        f"Return on the initial deposit of ${initial_deposit:,.0f}.",
-                        f"For every $1 lost, the account made ${profit_factor:.2f}." if profit_factor != float('inf') else "No losses occurred.",
-                        f"Won {int(len(winning_trades))} out of {total_trades} trades taken.",
-                        "Total executions during the period."
-                    ]
-                }
-                st.table(pd.DataFrame(kpi_data))
-                
-                st.subheader("2. Risk & Stability Analysis")
-                st.markdown(f"""
-- **Max Drawdown:** {max_drawdown_percent:.2f}% (${max_drawdown_usd:,.2f})
-- *Analysis:* The drawdown is moderate relative to the aggressive growth. The account recovered from its deepest dip quickly, validating the strategy's resilience.
-
-- **Average Trade Outcome:**
-- **Avg. Win:** +${avg_win:,.2f}
-- **Avg. Loss:** -${abs(avg_loss):,.2f}
-- *Analysis:* The strategy relies on a high win rate ({win_rate:.0f}%) rather than a high Risk-to-Reward ratio. The average win and loss are nearly 1:1, meaning the high accuracy is the primary driver of profit.
-                """)
-                
-                st.subheader("3. Detailed Financial Breakdown")
+                roi_text = f"+{roi:.1f}%" if roi > 0 else f"{roi:.1f}%"
+                pf_display = f"{profit_factor:.2f}" if profit_factor != float('inf') else 'N/A'
                 
                 # Format Net Deposits correctly (e.g. -$2,600 instead of $-2,600)
                 if net_deposits_withdrawals > 0:
@@ -231,61 +199,91 @@ if uploaded_file is not None:
                 else:
                     net_dep_str = "$0.00"
                     
-                st.markdown(f"""
+                growth_balance = initial_deposit + net_profit
+
+                base_markdown = f"""
+**Account Analysis:** {start_date} – {end_date}
+
+This account has demonstrated exceptional high-growth performance over the analyzed period, achieving a **{roi_text} Return on Investment (ROI)** while maintaining a controlled risk profile. The strategy exhibits a high win rate ({win_rate:.1f}%) combined with a strong Profit Factor ({pf_display}), indicating a highly efficient and profitable trading system.
+
+## 1. Key Performance Indicators (KPIs)
+
+| Metric | Value | Meaning |
+| :--- | :--- | :--- |
+| **Net Profit** | ${net_profit:,.2f} | Total profit secured after all fees/losses. |
+| **Total ROI** | {roi_text} | Return on the initial deposit of ${initial_deposit:,.0f}. |
+| **Profit Factor** | {pf_display} | For every $1 lost, the account made ${profit_factor:.2f}. |
+| **Win Rate** | {win_rate:.1f}% | Won {int(len(winning_trades))} out of {total_trades} trades taken. |
+| **Total Trades** | {total_trades} | Total executions during the period. |
+
+## 2. Risk & Stability Analysis
+
+- **Max Drawdown:** {max_drawdown_percent:.2f}% (${max_drawdown_usd:,.2f})
+- *Analysis:* The drawdown is moderate relative to the aggressive growth. The account recovered from its deepest dip quickly, validating the strategy's resilience.
+
+- **Average Trade Outcome:**
+  - **Avg. Win:** +${avg_win:,.2f}
+  - **Avg. Loss:** -${abs(avg_loss):,.2f}
+- *Analysis:* The strategy relies on a high win rate ({win_rate:.0f}%) rather than a high Risk-to-Reward ratio. The average win and loss are nearly 1:1, meaning the high accuracy is the primary driver of profit.
+
+## 3. Detailed Financial Breakdown
+
 - **Gross Profit:** ${gross_profit:,.2f} (Total money gained from winning trades)
 - **Gross Loss:** -${abs(gross_loss):,.2f} (Total money lost from losing trades)
 - **Net Result:** ${net_profit:,.2f} (Gross Profit minus Gross Loss & Fees)
 - **Initial Deposit:** ~${initial_deposit:,.2f}
 - **Net Deposits/Withdrawals:** {net_dep_str}
 - **Current Balance:** ~${current_balance:,.2f}
-                """)
-                
-                st.subheader("Conclusion")
-                growth_balance = initial_deposit + net_profit
-                
-                conclusion_text = ""
+
+## Conclusion
+
+This statement reflects a highly profitable, active trading strategy. The system has successfully compounded the account from ~${initial_deposit:,.0f} to over ${growth_balance:,.0f} in the analyzed period. The metrics suggest a disciplined approach that capitalizes frequently on market movements (high win rate) while keeping losses within a recoverable range (stable drawdown).
+"""
+
+                final_markdown = base_markdown
                 
                 # Hardcoded API key as requested by user
                 google_api_key = "AIzaSyBl7l89DNal4eOk0m9g0HchzIOW_2yy3cU"
                 
                 # Try to use Gemini AI if API key is provided
                 if google_api_key:
-                    with st.spinner("Generating AI analysis with Gemini..."):
+                    with st.spinner("Generating AI Full Report with Gemini..."):
                         try:
                             client = genai.Client(api_key=google_api_key)
                             prompt = f"""
                             You are a professional financial analyst reviewing a trading performance statement.
-                            Write a highly professional, concise, one-paragraph conclusion (no bullet points, no headers) 
-                            evaluating this trading strategy based on the following metrics:
+                            I will provide you with a base report containing the exact calculated metrics. 
+                            Your job is to rewrite the analytical paragraphs (the intro, Risk Analysis, and Conclusion) to sound highly professional, objective, and fit for an institutional client.
                             
-                            - Initial Deposit: ${initial_deposit:,.2f}
-                            - Net Profit: ${net_profit:,.2f}
-                            - Current Balance: ${growth_balance:,.2f}
-                            - ROI: {roi:.1f}%
-                            - Win Rate: {win_rate:.1f}%
-                            - Max Drawdown: {max_drawdown_percent:.2f}% (${max_drawdown_usd:,.2f})
-                            - Profit Factor: {profit_factor:.2f}
-                            - Total Executions: {total_trades}
+                            **CRITICAL REQUIREMENTS:**
+                            1. You MUST output the ENTIRE report in Markdown format.
+                            2. You MUST keep the exact same section headers (1. Key Performance Indicators (KPIs), 2. Risk & Stability Analysis, 3. Detailed Financial Breakdown, Conclusion).
+                            3. You MUST keep the KPI table and the Financial Breakdown exactly as they are. Do not change the numbers or formatting of the bullets/tables.
+                            4. Do not wrap the response in ```markdown tags. Just output the raw markdown text.
                             
-                            Your tone should be objective and analytical, fit for an institutional or professional client.
+                            Here is the base report data to use:
+                            
+                            {base_markdown}
                             """
                             response = client.models.generate_content(
                                 model='gemini-2.5-flash',
                                 contents=prompt,
                             )
                             if response and response.text:
-                                conclusion_text = response.text.strip()
+                                final_markdown = response.text.strip()
+                                # Clean up potential markdown code block artifacts
+                                if final_markdown.startswith("```markdown"):
+                                    final_markdown = final_markdown[11:]
+                                if final_markdown.startswith("```"):
+                                    final_markdown = final_markdown[3:]
+                                if final_markdown.endswith("```"):
+                                    final_markdown = final_markdown[:-3]
+                                final_markdown = final_markdown.strip()
                         except Exception as e:
-                            st.error(f"Failed to generate AI conclusion: {e}")
-                            
-                # Fallback to hardcoded text
-                if not conclusion_text:
-                    if net_profit > 0:
-                        conclusion_text = f"This statement reflects a highly profitable, active trading strategy. The system has successfully compounded the account from ~${initial_deposit:,.0f} to over ${growth_balance:,.0f} in the analyzed period. The metrics suggest a disciplined approach that capitalizes frequently on market movements (high win rate) while keeping losses within a recoverable range (stable drawdown)."
-                    else:
-                        conclusion_text = f"This statement reflects a challenging trading period, with the account moving from ~${initial_deposit:,.0f} to ~${growth_balance:,.0f}. The strategy metrics suggest room for improvement in risk management or trade execution."
+                            st.error(f"Failed to generate full AI report: {e}")
                 
-                st.write(conclusion_text)
+                st.header("Trading Performance Report")
+                st.markdown(final_markdown, unsafe_allow_html=True)
                 
                 st.markdown("View the full account history here:")
                 
@@ -296,28 +294,10 @@ if uploaded_file is not None:
                 st.markdown("---")
                 
                 # Prepare Jinja context
+                report_html = markdown.markdown(final_markdown, extensions=['tables'])
+                
                 context = {
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "roi": f"{roi:.1f}",
-                    "net_profit": f"${net_profit:,.2f}",
-                    "win_rate": f"{win_rate:.1f}",
-                    "profit_factor": f"{profit_factor:.2f}" if profit_factor != float('inf') else "N/A",
-                    "total_trades": total_trades,
-                    "winning_trades_count": int(len(winning_trades)),
-                    "max_drawdown_percent": f"{max_drawdown_percent:.2f}",
-                    "max_drawdown_usd": f"${max_drawdown_usd:,.2f}",
-                    "avg_win": f"${avg_win:,.2f}",
-                    "avg_loss_abs": f"${abs(avg_loss):,.2f}",
-                    "initial_deposit": f"${initial_deposit:,.2f}",
-                    "initial_deposit_rounded": f"${initial_deposit:,.0f}",
-                    "growth_balance_rounded": f"${growth_balance:,.0f}",
-                    "net_deposits_withdrawals": net_dep_str,
-                    "gross_profit": f"${gross_profit:,.2f}",
-                    "gross_loss_abs": f"${abs(gross_loss):,.2f}",
-                    "total_fees": f"${total_fees:,.2f}",
-                    "current_balance": f"${current_balance:,.2f}",
-                    "conclusion_text": conclusion_text
+                    "report_html": report_html
                 }
                 
                 # Load CSS for embedded HTML export

@@ -6,3 +6,4 @@ pdfkit
 pypdf
 lxml
 google-genai
+markdown

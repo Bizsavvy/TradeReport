@@ -38,14 +38,14 @@ p {
 }
 
 /* Bullet Lists */
-.bullet-list {
+ul {
     list-style-type: disc;
     padding-left: 20px;
     color: #E2E8F0;
     margin-top: 5px;
 }
 
-.bullet-list li {
+ul li {
     margin-bottom: 8px;
 }
 
@@ -59,6 +59,7 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 15px;
+    margin-bottom: 25px;
     font-size: 13px;
     background-color: transparent;
     border: 1px solid #4A5568;
@@ -80,12 +81,14 @@ th {
 }
 
 /* Profit and Loss Coloring */
-.profit {
+.profit,
+strong:has(+ span:contains("+")) {
     color: #48BB78;
     /* Brighter green for dark mode */
 }
 
-.loss {
+.loss,
+strong:has(+ span:contains("-")) {
     color: #F56565;
     /* Brighter red for dark mode */
 }
