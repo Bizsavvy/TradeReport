@@ -32,3 +32,7 @@ venv.bak/
 *.csv
 debug_pandas.py
 *.pdf
+
+# Streamlit secrets
+.streamlit/
+secrets.toml

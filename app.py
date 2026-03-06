@@ -242,8 +242,8 @@ This statement reflects a highly profitable, active trading strategy. The system
 
                 final_markdown = base_markdown
                 
-                # Hardcoded API key as requested by user
-                google_api_key = "AIzaSyBl7l89DNal4eOk0m9g0HchzIOW_2yy3cU"
+                # Retrieve API key securely from Streamlit secrets
+                google_api_key = st.secrets.get("GEMINI_API_KEY", "")
                 
                 # Try to use Gemini AI if API key is provided
                 if google_api_key:
