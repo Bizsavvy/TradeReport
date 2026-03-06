@@ -245,13 +245,8 @@ if uploaded_file is not None:
                 
                 conclusion_text = ""
                 
-                # Try to fetch API key from streamlit secrets
-                google_api_key = None
-                try:
-                    if "GEMINI_API_KEY" in st.secrets:
-                        google_api_key = st.secrets["GEMINI_API_KEY"]
-                except Exception:
-                    pass
+                # Hardcoded API key as requested by user
+                google_api_key = "AIzaSyBl7l89DNal4eOk0m9g0HchzIOW_2yy3cU"
                 
                 # Try to use Gemini AI if API key is provided
                 if google_api_key:
