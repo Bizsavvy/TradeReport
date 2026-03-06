@@ -289,7 +289,10 @@ This statement reflects a highly profitable, active trading strategy. The system
                             st.error(f"Failed to generate full AI report: {e}")
                 
                 st.header("Trading Performance Report")
-                st.markdown(final_markdown, unsafe_allow_html=True)
+                
+                # Escape dollar signs for Streamlit to prevent MathJax from hijacking currency format
+                st_markdown = final_markdown.replace("$", r"\$")
+                st.markdown(st_markdown, unsafe_allow_html=True)
                 
                 st.markdown("View the full account history here:")
                 
